@@ -237,7 +237,7 @@ class Game {
                 this.audioManager.playSFX('boost');
                 this.isBoosting = true;
             }
-            currentSpeed *= 3; // Super fast!
+            currentSpeed *= 1.5; // Faster, but controllable
         } else {
             this.isBoosting = false;
         }
@@ -327,6 +327,32 @@ class Game {
                              this.gameOver();
                              return;
                         }
+                    }
+                }
+            }
+            
+            // Special Collision Check for Departing Train
+            if (this.departingTrain) {
+                const trainBox = new THREE.Box3().setFromObject(this.departingTrain);
+                const overlapX = playerBox.max.x > trainBox.min.x && playerBox.min.x < trainBox.max.x;
+                const overlapZ = playerBox.max.z > trainBox.min.z && playerBox.min.z < trainBox.max.z;
+                
+                if (overlapX && overlapZ) {
+                    const playerBottom = playerBox.min.y;
+                    const trainTop = trainBox.max.y;
+                    
+                    if (playerBottom >= trainTop - 1.5 && this.player.verticalVelocity <= 0.1) { // Wider tolerance for catch
+                         if (trainTop > this.player.groundY) {
+                             this.player.groundY = trainTop;
+                             
+                             // Trigger Boost if not already boosting!
+                             if (!this.isTrainBoosting) {
+                                 this.isTrainBoosting = true;
+                                 this.trainBoostTimer = 4.0; 
+                                 this.showDialogue("Hold on!! 4s Boost!");
+                                 this.audioManager.playSFX('boost');
+                             }
+                         }
                     }
                 }
             }
@@ -564,7 +590,7 @@ class Game {
             if (this.dialogueTimeout) clearTimeout(this.dialogueTimeout);
             this.dialogueTimeout = setTimeout(() => {
                 box.style.display = 'none';
-            }, 2000);
+            }, 3000);
         }
     }
 
@@ -608,28 +634,16 @@ class Game {
             if (this.trainBoostTimer <= 0) {
                 this.isTrainBoosting = false;
             }
-        } else {
-            // Check for trigger
-            // If close (e.g. within 30 units) and we have boosts left
-            if (dist < 30 && this.trainBoostCount < 3 && playerZ > trainZ) { 
-                // playerZ > trainZ means player is BEHIND train (since Z is negative) 
-                // Wait, Z goes 0 -> -100. Player -10, Train -20. -10 > -20. Correct.
-                // Triggers when player gets close from behind.
-                
-                this.isTrainBoosting = true;
-                this.trainBoostTimer = 4.0; // 4 seconds
-                this.trainBoostCount++;
-                this.audioManager.playSFX('boost'); // Sound effect!
-                console.log("Train Panic Boost! " + this.trainBoostCount);
-            }
-        }
+        } 
+        
+        // Removed distance-based trigger (boost only on collision)
 
         let trainSpeed;
         if (this.isTrainBoosting) {
-             trainSpeed = currentSpeed + 8; // Slower boost
+             trainSpeed = currentSpeed + 5.0; // Fast ride!
         } else {
-             // Normal: Slower than player (was -2.5, user wants slower -> -4.5)
-             trainSpeed = currentSpeed - 4.5; 
+             // Normal: Slower than player (was -0.001, user wants faster -> -2.0)
+             trainSpeed = currentSpeed - 2.0; 
         }
 
         // Apply Movement
