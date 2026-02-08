@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Import Test</title>
+</head>
+
+<body>
+    <h1>Import Test</h1>
+    <div id="log"></div>
+    <script>
+        function log(msg, color = 'black') {
+            const div = document.getElementById('log');
+            div.innerHTML += `<div style="color:${color}">${msg}</div>`;
+        }
+        window.onerror = (msg) => log("ERROR: " + msg, 'red');
+        window.addEventListener('error', (e) => {
+            if (e.target.tagName === 'SCRIPT') log("SCRIPT ERROR: " + e.target.src, 'red');
+        }, true);
+    </script>
+
+    <!-- 1. Test simple file -->
+    <script type="module">
+        try {
+            const mod = await import('./libs/test.js');
+            log("SUCCESS: ./libs/test.js imported. Value: " + mod.status, 'green');
+        } catch (e) {
+            log("FAILURE: ./libs/test.js import failed: " + e.message, 'red');
+        }
+    </script>
+
+    <!-- 2. Test Three.js via script tag (should fail with syntax error if found, or load error if 404) -->
+    <script src="./libs/three.js" onerror="log('SCRIPT SRC FAILED for ./libs/three.js', 'red')"
+        onload="log('SCRIPT SRC LOADED (Unexpected for module but file exists)', 'orange')"></script>
+
+    <!-- Import Map -->
+    <!-- Same as index.html -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "./libs/three.js",
+                "three/addons/": "./libs/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        log("Starting module import...");
+        try {
+            const THREE = await import('three');
+            log("SUCCESS: 'three' imported. Revision: " + THREE.REVISION, 'green');
+
+            try {
+                const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js');
+                log("SUCCESS: 'GLTFLoader' imported.", 'green');
+                const loader = new GLTFLoader();
+                log("SUCCESS: GLTFLoader instantiated.", 'green');
+            } catch (e) {
+                log("FAILURE: GLTFLoader import failed: " + e.message, 'red');
+            }
+
+        } catch (e) {
+            log("FAILURE: 'three' import failed: " + e.message, 'red');
+        }
+    </script>
+</body>
+
+</html>
