@@ -9,7 +9,7 @@ export class InputManager {
         };
         this.touchStartX = 0;
         this.touchStartY = 0;
-        
+
         this._onKeyDown = this._onKeyDown.bind(this);
         this._onKeyUp = this._onKeyUp.bind(this);
         this._onTouchStart = this._onTouchStart.bind(this);
@@ -17,12 +17,12 @@ export class InputManager {
 
         window.addEventListener('keydown', this._onKeyDown);
         window.addEventListener('keyup', this._onKeyUp);
-        window.addEventListener('touchstart', this._onTouchStart);
-        window.addEventListener('touchend', this._onTouchEnd);
+        window.addEventListener('touchstart', this._onTouchStart, { passive: false });
+        window.addEventListener('touchend', this._onTouchEnd, { passive: false });
     }
 
     _onKeyDown(event) {
-        switch(event.code) {
+        switch (event.code) {
             case 'ArrowLeft':
             case 'KeyA':
                 this.keys.left = true;
@@ -46,7 +46,7 @@ export class InputManager {
     }
 
     _onKeyUp(event) {
-        switch(event.code) {
+        switch (event.code) {
             case 'ArrowLeft':
             case 'KeyA':
                 this.keys.left = false;
@@ -70,25 +70,38 @@ export class InputManager {
     }
 
     _onTouchStart(event) {
-        this.touchStartX = event.changedTouches[0].screenX;
-        this.touchStartY = event.changedTouches[0].screenY;
+        // Prevent default browser behavior (scrolling, zooming) to ensure game receives input
+        if (event.cancelable) event.preventDefault();
+
+        this.touchStartX = event.changedTouches[0].clientX;
+        this.touchStartY = event.changedTouches[0].clientY;
     }
 
     _onTouchEnd(event) {
-        const touchEndX = event.changedTouches[0].screenX;
-        const touchEndY = event.changedTouches[0].screenY;
-        
+        // Prevent default behavior
+        if (event.cancelable) event.preventDefault();
+
+        const touchEndX = event.changedTouches[0].clientX;
+        const touchEndY = event.changedTouches[0].clientY;
+
         const diffX = touchEndX - this.touchStartX;
         const diffY = touchEndY - this.touchStartY;
 
+        // Threshold for a valid swipe (prevent accidental taps being swipes)
+        const threshold = 30;
+
         if (Math.abs(diffX) > Math.abs(diffY)) {
             // Horizontal swipe
-            if (diffX > 50) this.keys.right = true; // Swipe Right
-            if (diffX < -50) this.keys.left = true; // Swipe Left
+            if (Math.abs(diffX) > threshold) {
+                if (diffX > 0) this.keys.right = true; // Swipe Right
+                else this.keys.left = true; // Swipe Left
+            }
         } else {
             // Vertical swipe
-            if (diffY > 50) this.keys.down = true; // Swipe Down
-            if (diffY < -50) this.keys.up = true; // Swipe Up
+            if (Math.abs(diffY) > threshold) {
+                if (diffY > 0) this.keys.down = true; // Swipe Down
+                else this.keys.up = true; // Swipe Up
+            }
         }
 
         // Reset inputs after a short frame to simulate a "press" for swipes

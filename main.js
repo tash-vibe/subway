@@ -29,7 +29,7 @@ class Game {
         this.isPaused = false;
         this.isBoosting = false;
         this.coinScore = 0;
-        
+
         this.init();
         this.animate();
     }
@@ -86,7 +86,7 @@ class Game {
         // Remove loading screen
         const loadingScreen = document.getElementById('loading-screen');
         if (loadingScreen) {
-             // Just hide it, start screen is on top
+            // Just hide it, start screen is on top
             loadingScreen.style.display = 'none';
         }
 
@@ -94,29 +94,36 @@ class Game {
         // Event Listeners
         // Event Listeners
         window.addEventListener('resize', () => this.onWindowResize(), false);
-        window.addEventListener('keydown', (e) => {
-            if (e.code === 'Escape' || e.code === 'KeyP') {
-                this.togglePause();
-            }
-
+        const startGameHandler = () => {
             if (!this.isGameActive && !this.isGameOver && !this.isCutsceneActive) {
                 // Initialize Audio Context on user interaction
                 this.audioManager.init();
                 this.startGame();
             }
+        };
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Escape' || e.code === 'KeyP') {
+                this.togglePause();
+            }
+            startGameHandler();
         });
+
+        window.addEventListener('touchstart', (e) => {
+            startGameHandler();
+        }, { passive: false });
 
         // Pause Button Logic
         const pauseBtn = document.getElementById('pause-btn');
         if (pauseBtn) pauseBtn.addEventListener('click', (e) => {
             console.log("Pause button clicked!");
             this.togglePause();
-            e.target.blur(); 
+            e.target.blur();
         });
 
         const resumeBtn = document.getElementById('resume-btn');
         if (resumeBtn) resumeBtn.addEventListener('click', () => {
-             console.log("Resume button clicked!");
+            console.log("Resume button clicked!");
             this.togglePause();
         });
 
@@ -127,10 +134,10 @@ class Game {
                 this.audioManager.setBGMVolume(parseFloat(e.target.value));
             });
         }
-        
+
         const sfxSlider = document.getElementById('sfx-slider');
         if (sfxSlider) {
-             sfxSlider.addEventListener('input', (e) => {
+            sfxSlider.addEventListener('input', (e) => {
                 this.audioManager.setSFXVolume(parseFloat(e.target.value));
             });
         }
@@ -150,14 +157,14 @@ class Game {
     togglePause() {
         console.log("Toggle Pause called. Active:", this.isGameActive, "GameOver:", this.isGameOver, "CurrentlyPaused:", this.isPaused);
         if (!this.isGameActive || this.isGameOver) {
-             console.log("Ignored pause toggle.");
-             return;
+            console.log("Ignored pause toggle.");
+            return;
         }
-        
+
         this.isPaused = !this.isPaused;
         const overlay = document.getElementById('pause-overlay');
         const pauseBtn = document.getElementById('pause-btn');
-        
+
         if (this.isPaused) {
             this.clock.stop();
             if (overlay) overlay.style.display = 'flex';
@@ -172,7 +179,7 @@ class Game {
     startGame() {
         const startScreen = document.getElementById('start-screen');
         if (startScreen) startScreen.style.display = 'none';
-        
+
         const loading = document.getElementById('loading-screen');
         if (loading) loading.style.display = 'none';
 
@@ -180,7 +187,7 @@ class Game {
         let gamesPlayed = parseInt(localStorage.getItem('gamesPlayed') || '0');
         gamesPlayed++;
         localStorage.setItem('gamesPlayed', gamesPlayed);
-        
+
         const countDisplay = document.getElementById('games-played-count');
         if (countDisplay) countDisplay.innerText = gamesPlayed;
 
@@ -191,7 +198,7 @@ class Game {
 
     animate() {
         requestAnimationFrame(() => this.animate());
-        
+
         if (this.isPaused) return;
 
         const delta = this.clock.getDelta();
@@ -210,9 +217,9 @@ class Game {
             this.renderer.render(this.scene, this.camera);
             return;
         }
-        
+
         if (!this.isGameActive) return;
-        
+
         // Sound Triggers for Jump
         if (input.up && !this.player.isJumping && !this.player.isFlying && this.player.mesh.position.y <= this.player.groundY + 0.1) {
             this.audioManager.playSFX('jump');
@@ -225,12 +232,12 @@ class Game {
         // Base speed increases with distance
         const distance = Math.abs(this.player.mesh.position.z);
         let baseSpeed = CONFIG.speed + (distance * 0.05); // Increase by 5 every 100m
-        
+
         // Cap speed to avoid broken physics (e.g., max 50 base)
         if (baseSpeed > 60) baseSpeed = 60;
 
         let currentSpeed = baseSpeed;
-        
+
         // Boost Logic (Multiplies the ALREADY scaled speed)
         if (input.boost) {
             if (!this.isBoosting) {
@@ -244,10 +251,10 @@ class Game {
 
         // Move Player Forward
         this.player.mesh.position.z -= currentSpeed * delta;
-        
+
         // Move Departing Train
         this.updateDepartingTrain(delta, currentSpeed);
-        
+
         // Update World
         this.worldManager.update(this.player.mesh.position.z);
 
@@ -276,19 +283,19 @@ class Game {
         // Camera Follow
         let camTargetY = this.player.mesh.position.y + 4;
         let camTargetZ = this.player.mesh.position.z + 8;
-        
+
         if (this.isJetpackActive) {
             camTargetY = this.player.mesh.position.y + 6; // Higher camera
             camTargetZ = this.player.mesh.position.z + 12; // Further back
         }
 
-        this.camera.position.x = this.player.mesh.position.x * 0.3; 
+        this.camera.position.x = this.player.mesh.position.x * 0.3;
         this.camera.position.y += (camTargetY - this.camera.position.y) * 0.1;
         this.camera.position.z = camTargetZ;
         this.camera.lookAt(this.player.mesh.position.x, this.player.mesh.position.y + 1, this.player.mesh.position.z - 5);
 
         this.renderer.render(this.scene, this.camera);
-        
+
         // Update Score (Distance based)
         this.updateUI();
     }
@@ -301,58 +308,58 @@ class Game {
         // Obstacles (Skip if flying)
         if (!this.player.isFlying) {
             const obstacles = this.worldManager.getObstacles();
-            this.player.groundY = 1; 
+            this.player.groundY = 1;
 
             for (const obs of obstacles) {
                 const obsBox = obs.box;
-                
+
                 // 1. Check Horizontal Intersection (X and Z)
                 const overlapX = playerBox.max.x > obsBox.min.x && playerBox.min.x < obsBox.max.x;
                 const overlapZ = playerBox.max.z > obsBox.min.z && playerBox.min.z < obsBox.max.z;
-                
+
                 if (overlapX && overlapZ) {
                     const playerBottom = playerBox.min.y;
                     const obsTop = obsBox.max.y;
-                    
+
                     if (playerBottom >= obsTop - 1.0 && this.player.verticalVelocity <= 0.1) {
                         if (obsTop > this.player.groundY) {
                             this.player.groundY = obsTop;
                         }
-                    } 
+                    }
                     else {
                         const overlapY = playerBox.max.y > obsBox.min.y && playerBox.min.y < obsBox.max.y;
                         if (overlapY) {
-                             console.log("Crash!");
-                             this.audioManager.playSFX('crash'); // Play Crash
-                             this.gameOver();
-                             return;
+                            console.log("Crash!");
+                            this.audioManager.playSFX('crash'); // Play Crash
+                            this.gameOver();
+                            return;
                         }
                     }
                 }
             }
-            
+
             // Special Collision Check for Departing Train
             if (this.departingTrain) {
                 const trainBox = new THREE.Box3().setFromObject(this.departingTrain);
                 const overlapX = playerBox.max.x > trainBox.min.x && playerBox.min.x < trainBox.max.x;
                 const overlapZ = playerBox.max.z > trainBox.min.z && playerBox.min.z < trainBox.max.z;
-                
+
                 if (overlapX && overlapZ) {
                     const playerBottom = playerBox.min.y;
                     const trainTop = trainBox.max.y;
-                    
+
                     if (playerBottom >= trainTop - 1.5 && this.player.verticalVelocity <= 0.1) { // Wider tolerance for catch
-                         if (trainTop > this.player.groundY) {
-                             this.player.groundY = trainTop;
-                             
-                             // Trigger Boost if not already boosting!
-                             if (!this.isTrainBoosting) {
-                                 this.isTrainBoosting = true;
-                                 this.trainBoostTimer = 4.0; 
-                                 this.showDialogue("Hold on!! 4s Boost!");
-                                 this.audioManager.playSFX('boost');
-                             }
-                         }
+                        if (trainTop > this.player.groundY) {
+                            this.player.groundY = trainTop;
+
+                            // Trigger Boost if not already boosting!
+                            if (!this.isTrainBoosting) {
+                                this.isTrainBoosting = true;
+                                this.trainBoostTimer = 4.0;
+                                this.showDialogue("Hold on!! 4s Boost!");
+                                this.audioManager.playSFX('boost');
+                            }
+                        }
                     }
                 }
             }
@@ -369,8 +376,8 @@ class Game {
                     if (this.isMagnetActive) {
                         const dist = coin.mesh.position.distanceTo(this.player.mesh.position);
                         if (dist < 10) { // Magnet Range
-                             // Move coin explicitly in updateMagnet, but strictly we can mark it "magnetized"
-                             coin.mesh.position.lerp(this.player.mesh.position, 10 * delta);
+                            // Move coin explicitly in updateMagnet, but strictly we can mark it "magnetized"
+                            coin.mesh.position.lerp(this.player.mesh.position, 10 * delta);
                         }
                     }
 
@@ -378,7 +385,7 @@ class Game {
                         // Collect
                         coin.active = false;
                         chunk.mesh.remove(coin.mesh);
-                        
+
                         const type = coin.mesh.userData.type;
                         if (type === 'coin') {
                             this.coinScore += (1 * (this.scoreMultiplier || 1));
@@ -396,7 +403,7 @@ class Game {
                                 this.activateMultiplier();
                             }
                         }
-                        
+
                         this.updateUI();
                     }
                 }
@@ -408,7 +415,7 @@ class Game {
         this.isMagnetActive = true;
         this.magnetTimer = 10.0;
         this.updatePowerupUI();
-        
+
         // Auto deactivate logic or timer in update
         setTimeout(() => { this.isMagnetActive = false; this.updatePowerupUI(); }, 10000);
     }
@@ -441,40 +448,40 @@ class Game {
     updatePowerupUI() {
         const indicator = document.getElementById('powerup-indicator');
         if (!indicator) return;
-        
+
         let text = "";
         if (this.isJetpackActive) text += "🚀 JETPACK! ";
         if (this.isMagnetActive) text += "🧲 MAGNET! ";
         if (this.isMultiplierActive) text += "✖️ 2X SCORE! ";
-        
+
         // Sneakers handled separately but should merge?
         // Let's keep sneakers simple for now or merge later.
-        
+
         indicator.innerText = text;
     }
 
     activateSneakers() {
         console.log("Super Sneakers Active!");
-        this.player.setJumpMultiplier(1.8); 
+        this.player.setJumpMultiplier(1.8);
         this.updatePowerupUI(); // Update UI
-        
+
         setTimeout(() => {
             this.player.setJumpMultiplier(1.0);
-             this.updatePowerupUI();
+            this.updatePowerupUI();
         }, 10000);
     }
-    
+
     updateUI() {
         // Update score display to include coins if needed, or separate counter
         const distScore = Math.floor(Math.abs(this.player.mesh.position.z));
         document.getElementById('score').innerText = `Run: ${distScore} | Coins: ${this.coinScore}`;
-        
+
         // Debug Update
         const dbg = document.getElementById('debug-overlay');
         if (dbg) {
             // Find if we are currently over an obstacle (helper for debug) (Recalculating technically, but cheap)
             // Actually we can just track it in checkCollisions if we wanted, let's just show Z
-             dbg.innerHTML = `
+            dbg.innerHTML = `
                 Y: ${this.player.mesh.position.y.toFixed(2)}<br>
                 GroundY: ${this.player.groundY.toFixed(2)}<br>
                 VelY: ${this.player.verticalVelocity.toFixed(2)}<br>
@@ -503,11 +510,11 @@ class Game {
     startCutscene() {
         this.isCutsceneActive = true;
         this.cutsceneTimer = 0;
-        
+
         // Hide UI
         const score = document.getElementById('score');
-        if(score) score.style.display = 'none';
-        
+        if (score) score.style.display = 'none';
+
         // Setup Train
         if (!this.cutsceneTrain) {
             this.cutsceneTrain = createTrainMesh();
@@ -524,24 +531,24 @@ class Game {
             this.cutscenePlatform.receiveShadow = true;
             this.scene.add(this.cutscenePlatform);
         }
-        
+
         // Setup Player
         this.player.mesh.position.set(0, 1, -5); // Behind train, on track
         this.player.isJumping = false;
         this.player.isRolling = false;
-        
+
         // Camera setup for cutscene
         // Cinematic angle: From platform side
-        this.camera.position.set(8, 3, 5); 
+        this.camera.position.set(8, 3, 5);
         this.camera.lookAt(0, 2, -10);
     }
 
     updateCutscene(delta) {
         this.cutsceneTimer += delta;
-        
+
         // Dialogue Triggers
         if (!this.cutsceneState) this.cutsceneState = {}; // Init state if needed
-        
+
         if (this.cutsceneTimer > 0.5 && this.cutsceneTimer < 0.6 && !this.cutsceneState.d1) {
             this.showDialogue("Finally, here it is...");
             this.cutsceneState.d1 = true;
@@ -561,31 +568,31 @@ class Game {
             const trainSpeed = 15 + (this.cutsceneTimer - 1.0) * 8; // Accelerate faster
             this.cutsceneTrain.position.z -= trainSpeed * delta;
         }
-        
+
         // Player Logic
         if (this.cutsceneTimer > 2.0) {
             // Player starts chasing
-            this.player.mesh.position.z -= 12 * delta; 
-            
+            this.player.mesh.position.z -= 12 * delta;
+
             // Camera follow (Pan to behind)
-             this.camera.position.x += (0 - this.camera.position.x) * delta; // Center X
-             this.camera.position.y = 4;
-             this.camera.position.z = this.player.mesh.position.z + 8;
-             this.camera.lookAt(this.cutsceneTrain.position.x, 2, this.cutsceneTrain.position.z);
+            this.camera.position.x += (0 - this.camera.position.x) * delta; // Center X
+            this.camera.position.y = 4;
+            this.camera.position.z = this.player.mesh.position.z + 8;
+            this.camera.lookAt(this.cutsceneTrain.position.x, 2, this.cutsceneTrain.position.z);
         }
-        
+
         // Transition Query
         if (this.cutsceneTimer > 4.5 || (this.inputManager.getAction().up)) { // End after 4.5s or jump skip
             this.endCutscene();
         }
     }
-    
+
     showDialogue(text) {
         const box = document.getElementById('dialogue-box');
         if (box) {
             box.innerText = text;
             box.style.display = 'block';
-            
+
             // Auto hide after 2s? Or let next dialogue replace it?
             if (this.dialogueTimeout) clearTimeout(this.dialogueTimeout);
             this.dialogueTimeout = setTimeout(() => {
@@ -596,26 +603,26 @@ class Game {
 
     endCutscene() {
         this.isCutsceneActive = false;
-        this.isGameActive = true; 
-        
+        this.isGameActive = true;
+
         // Remove Cutscene Objects
         // Keep the train! We want it to move away.
         this.departingTrain = this.cutsceneTrain;
-        this.trainTargetX = 0; 
+        this.trainTargetX = 0;
         this.trainBoostCount = 0;
         this.isTrainBoosting = false;
         this.trainBoostTimer = 0;
-        
+
         this.cutsceneTrain = null;
-        
+
         if (this.cutscenePlatform) {
             this.scene.remove(this.cutscenePlatform);
             this.cutscenePlatform = null;
         }
-        
+
         // Show UI
         const score = document.getElementById('score');
-        if(score) score.style.display = 'block';
+        if (score) score.style.display = 'block';
 
         // Switch to Gameplay Music
         this.audioManager.playGameplayBGM();
@@ -634,16 +641,16 @@ class Game {
             if (this.trainBoostTimer <= 0) {
                 this.isTrainBoosting = false;
             }
-        } 
-        
+        }
+
         // Removed distance-based trigger (boost only on collision)
 
         let trainSpeed;
         if (this.isTrainBoosting) {
-             trainSpeed = currentSpeed + 5.0; // Fast ride!
+            trainSpeed = currentSpeed + 5.0; // Fast ride!
         } else {
-             // Normal: Slower than player (was -0.001, user wants faster -> -2.0)
-             trainSpeed = currentSpeed - 2.0; 
+            // Normal: Slower than player (was -0.001, user wants faster -> -2.0)
+            trainSpeed = currentSpeed - 2.0;
         }
 
         // Apply Movement
@@ -655,47 +662,47 @@ class Game {
         const lookAheadDist = 40; // Look ahead
         // const trainZ = this.departingTrain.position.z; // update var
         const currentLaneX = this.trainTargetX;
-        
+
         // Find obstacles
         // Optimization: checks all, which is fine for small world
-        const obstacles = this.worldManager.getObstacles(); 
+        const obstacles = this.worldManager.getObstacles();
 
         let blocked = false;
         for (const obs of obstacles) {
-             // Check if object is ahead of train roughly
-             if (obs.mesh.position.z < this.departingTrain.position.z && obs.mesh.position.z > this.departingTrain.position.z - lookAheadDist) {
-                 // Check X: collision width approx 2
-                 if (Math.abs(obs.mesh.position.x - currentLaneX) < 2) {
-                     blocked = true;
-                     break;
-                 }
-             }
+            // Check if object is ahead of train roughly
+            if (obs.mesh.position.z < this.departingTrain.position.z && obs.mesh.position.z > this.departingTrain.position.z - lookAheadDist) {
+                // Check X: collision width approx 2
+                if (Math.abs(obs.mesh.position.x - currentLaneX) < 2) {
+                    blocked = true;
+                    break;
+                }
+            }
         }
 
         if (blocked) {
             // Need to switch!
             // Potential lanes: -4, 0, 4
             const candidates = [-4, 0, 4].filter(x => x !== currentLaneX);
-            
+
             let bestLane = currentLaneX; // Default to stay (crash) if trapped
-            
+
             for (const lane of candidates) {
                 let laneBlocked = false;
-                 for (const obs of obstacles) {
-                     if (obs.mesh.position.z < this.departingTrain.position.z && obs.mesh.position.z > this.departingTrain.position.z - lookAheadDist) {
-                         if (Math.abs(obs.mesh.position.x - lane) < 2) {
-                             laneBlocked = true;
-                             break;
-                         }
-                     }
-                 }
-                 
-                 if (!laneBlocked) {
-                     bestLane = lane;
-                     break; 
-                 }
+                for (const obs of obstacles) {
+                    if (obs.mesh.position.z < this.departingTrain.position.z && obs.mesh.position.z > this.departingTrain.position.z - lookAheadDist) {
+                        if (Math.abs(obs.mesh.position.x - lane) < 2) {
+                            laneBlocked = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!laneBlocked) {
+                    bestLane = lane;
+                    break;
+                }
             }
-            
+
             if (bestLane !== currentLaneX) {
                 this.trainTargetX = bestLane;
             }
@@ -703,12 +710,12 @@ class Game {
 
         // 3. Smooth Lerp X
         if (this.trainTargetX !== undefined) {
-             // Lerp speed
-             this.departingTrain.position.x += (this.trainTargetX - this.departingTrain.position.x) * 5 * delta;
-             
-             // Tilt train for effect (banking)
-             const tilt = (this.departingTrain.position.x - this.trainTargetX) * 0.1;
-             this.departingTrain.rotation.z = tilt;
+            // Lerp speed
+            this.departingTrain.position.x += (this.trainTargetX - this.departingTrain.position.x) * 5 * delta;
+
+            // Tilt train for effect (banking)
+            const tilt = (this.departingTrain.position.x - this.trainTargetX) * 0.1;
+            this.departingTrain.rotation.z = tilt;
         }
 
         // Cleanup if too far (increased range so we can enjoy the show)
@@ -716,8 +723,8 @@ class Game {
         // Or if train is far ahead? 
         // Logic: |player - train| > 300
         if (Math.abs(this.player.mesh.position.z - this.departingTrain.position.z) > 300) {
-             this.scene.remove(this.departingTrain);
-             this.departingTrain = null;
+            this.scene.remove(this.departingTrain);
+            this.departingTrain = null;
         }
     }
 }
