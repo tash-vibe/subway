@@ -38,7 +38,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Expires', '0')
         super().end_headers()
 
-PORT = 8000
+PORT = 8081
 # Allow port configuration via command line
 if len(sys.argv) > 1:
     try:
