@@ -90,6 +90,18 @@
             const errorMsg = `<strong>Unhandled Promise Rejection:</strong> ${event.reason}`;
             showError(errorMsg);
         };
+
+        window.addEventListener('error', function (event) {
+            if (event.target && (event.target.tagName === 'SCRIPT' || event.target.tagName === 'LINK')) {
+                const url = event.target.src || event.target.href;
+                showError(`<strong>Resource Failed to Load:</strong> ${url}<br>Check your internet connection if using CDN.`);
+            }
+        }, true); // Capture phase to catch resource errors
+
+        // Protocol Check
+        if (location.protocol === 'file:') {
+            showError("<strong>WARNING:</strong> You are running via 'file://' protocol. <br>Modules will NOT work. Please run a local server (use run_game.bat or python -m http.server).");
+        }
     </script>
 
     <div id="start-screen"
